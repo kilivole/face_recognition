@@ -6,14 +6,11 @@ import Logo from './Components/Logo/Logo';
 import Signin from './Components/Signin/Signin';
 import Register from './Components/Register/Register'
 import ImageLinkForm from './Components/ImageLinkForm/ImageLinkForm';
-import Clarifai from  'clarifai';
 import Rank from './Components/Rank/Rank';
 import './App.css';
 
 
-const app = new Clarifai.App({
-  apiKey: '1ee944cada284487b4bb826ff6bec6c0'
-});
+
 
 const particlesOptions= {
   particles: {
@@ -33,6 +30,21 @@ const particlesOptions= {
         mode:'repulse'}
     }
   }
+}
+
+const initialState = {
+  input: '',
+      imageUrl: '',
+      box: [],
+      route: 'signin',
+      isSignedIn: false,
+      user:{
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: ''
+      } 
 }
 
 class App extends Component{
@@ -90,9 +102,17 @@ class App extends Component{
 
   onPictureSubmit = () =>{
     this.setState({imageUrl: this.state.input})
-    app.models
-      .predict(Clarifai.FACE_DETECT_MODEL, 
-        this.state.input)
+    if(this.state.input === initialState.input){
+      return console.log('no url inserted, duude')
+    } else{
+      fetch('http://localhost:3000/imageurl', {
+        method: 'post',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            input: this.state.input
+        })
+      })
+      .then(response => response.json())
       .then(response => {
         if(response){
           fetch('http://localhost:3000/image', {
@@ -111,12 +131,17 @@ class App extends Component{
       }
         this.displayFaceBox(this.calculateFaceLocation(response))
       })
-      .catch(err => console.log(err));
+      .catch(err => console.log(err));      
+    }
+
   }
+
+  
+
 
   onRouteChange = (route) => {
     if (route === 'signout'){
-      this.setState({isSignedIn: false})
+      this.setState(initialState)
     } else if (route === 'home'){
       this.setState({isSignedIn: true})
     }
@@ -144,7 +169,7 @@ class App extends Component{
           <FaceRecognition  box= {box} imageUrl={imageUrl}/>
          </div>
         : (
-          route === 'signin'
+          (route === 'signin' || route === 'signout')
           ?<Signin  
               loadUser={this.loadUser}
               onRouteChange={this.onRouteChange} 
